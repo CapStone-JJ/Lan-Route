@@ -4,6 +4,7 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
+const { authenticateUser } = require("../auth/middleware");
 
 // Get all comments for a post
 commentRouter.get('/post/:postId', async (req, res, next) => {
@@ -22,12 +23,12 @@ commentRouter.get('/post/:postId', async (req, res, next) => {
 });
 
 // Create a new comnment
-commentRouter.post("/", async (req, res, next) => {
+commentRouter.post("/", authenticateUser, async (req, res, next) => {
     const { text, postId } = req.body;
     
     try {
         const token = req.headers.authorization.split(" ")[1]; // Extract the token
-        const decoded = jwt.verify(token, process.env.JWT); // Verify the token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET); // Verify the token
         const userId = decoded.id;
   
         // Retrieve the user data based on the user ID obtained from the token
@@ -59,12 +60,12 @@ commentRouter.post("/", async (req, res, next) => {
   });
 
 // Delete a comment 
-commentRouter.delete("/:id", async (req, res, next) => {
+commentRouter.delete("/:id", authenticateUser, async (req, res, next) => {
     const commentId = parseInt(req.params.id);
   
     try {
         const token = req.headers.authorization.split(" ")[1]; // Extract the token
-        const decoded = jwt.verify(token, process.env.JWT); // Verify the token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET); // Verify the token
         const userId = decoded.id;
   
         // Check if the comment exists and if the logged-in user is the author of the comment

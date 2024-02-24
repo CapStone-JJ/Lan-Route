@@ -1,40 +1,35 @@
-const router  = require('express').Router();
+const router = require("express").Router();
+require("dotenv").config();
+const jwt = require("jsonwebtoken");
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
-const jwt = require("jsonwebtoken");
-const bcrypt = require("bcrypt");
-
-const protection = require('./middleware');
+const bcrypt = require('bcrypt');
+const { authenticateUser, authorizeUser } = require("./middleware");
 
 // Create a new user
 router.post("/register", async (req, res, next) => {
-  try {
-      const { username, password, email, firstName, lastName, seller } = req.body;
-      const saltRounds = 10; // Number of salt rounds
-      const hashedPassword = await bcrypt.hash(password, saltRounds);
+    try {
+        const { username, password, email, firstName, lastName } = req.body;
+  
+        const user = await prisma.user.create({
+            data: {
+                firstName,
+                lastName,
+                username,
+                email,
+                password,
+            }
+        });
+  
+        // Send response with token and user ID
+        res.status(201).send({ message: "New Account Created" });
+    } catch (err) {
+        // Handle error
+        next(err);
+    }
+  });
 
-      const user = await prisma.user.create({
-          data: {
-              firstName,
-              lastName,
-              username,
-              email,
-              password: hashedPassword
-          }
-      });
-
-      // Set user in request object (optional)
-      req.user = user;
-
-      // Send response with token and user ID
-      res.status(201).send({ message: "New Account Created" });
-  } catch (err) {
-      // Handle error
-      next(err);
-  }
-});
-
-// Login to an existing user account
+  // Login to an existing user account
 router.post("/login", async (req, res, next) => {
     try {
         const { username, password } = req.body;
@@ -45,43 +40,47 @@ router.post("/login", async (req, res, next) => {
             },
         });
 
-        if (!user) {
-            return res.status(401).send("Invalid login credentials.");
+        const match = await bcrypt.compare(password, user.password);
+        if (!match) {
+          return res.status(401).send("Invalid login credentials.");
         }
-
-        const passwordMatch = await bcrypt.compare(password, user.password);
-        if (!passwordMatch) {
-            return res.status(401).send("Invalid login credentials.");
-        }
-
-        // Create a token with the user id
-        const token = jwt.sign({ id: user.id }, process.env.JWT);
-
+    
+        const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET);
+    
         res.send({ token });
-    } catch (error) {
+      } catch (error) {
         next(error);
-    }
-});
+      }
+    });
 
 // Get the currently logged in user
-router.get("/me", async (req, res, next) => {
-    console.log( req.user.id)
+router.get("/me", authenticateUser, async (req, res, next) => {
     try {
+      // Retrieve the user ID from the request object, assuming it's stored in req.user.id
+      const userId = req.user.id;
+  
+      // Use the user ID to find the user in the database
       const user = await prisma.user.findUnique({
-        where: {
-          id: req.user?.id,
-        },
+        where: { id: userId },
       });
-      res.send(user);
+  
+      // Check if the user exists
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+  
+      // Return the user data
+      return res.json(user);
     } catch (error) {
-      next(error);
+      console.error("Error fetching user data:", error);
+      return res.status(500).json({ error: "Internal server error" });
     }
   });
 
 // Update a user
-router.put("/:id", require('./middleware'), async (req, res, next) => {
+router.put("/:id", authenticateUser, async (req, res, next) => {
     try {
-      const { username, password, email, firstName, lastName, seller, } = req.body;
+      const { username, password, email, firstName, lastName } = req.body;
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
       const user = await prisma.user.update({
@@ -90,7 +89,6 @@ router.put("/:id", require('./middleware'), async (req, res, next) => {
             lastName,
             username,
             email,
-            seller,
             password: hashedPassword
       },
         where: {
@@ -109,7 +107,7 @@ router.put("/:id", require('./middleware'), async (req, res, next) => {
   });
   
 // Delete a user by id
-router.delete("/:id", require('./middleware'), async (req, res, next) => {
+router.delete("/:id", authenticateUser, async (req, res, next) => {
     try {
       const user = await prisma.user.delete({
         where: {

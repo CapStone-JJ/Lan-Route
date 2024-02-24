@@ -1,22 +1,21 @@
 const jwt = require("jsonwebtoken");
-const process = require("process");
+require("dotenv").config();
 
-const protection = async (req, res, next) => {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return res.status(401).send("No token provided.");
-    }
-
-    const token = authHeader.split(" ")[1];
-
+function authenticateUser(req, res, next) {
+    const auth = req.headers.authorization;
+    const token = auth?.startsWith("Bearer ") ? auth.slice(7) : null;
     try {
-        req.user = jwt.verify(token, process.env.JWT);
-        next();
+        if (token) {
+            req.user = jwt.verify(token, process.env.JWT_SECRET);
+        } else {
+            req.user = null;
+        }
     } catch (error) {
-        return res.status(403).send("Failed to authenticate token.");
+        console.error("JWT verification error:", error);
     }
+    next();
+}
+
+module.exports = {
+    authenticateUser,
 };
-
-module.exports = protection;
-
