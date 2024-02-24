@@ -1,0 +1,124 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  username   String   @unique
+  firstName  String
+  bio        String?
+  lastName   String
+  email      String   @unique
+  password   String // Note: You should encrypt passwords for security
+  createdAt  DateTime @default(now())
+  admin      Boolean  @default(false)
+  image      String   @default("null")
+  Vote       Vote[]
+  widgets    Widget[]
+  location      String?
+  viewedProfile Int    @default(0)
+  impressions   Int    @default(0)
+
+  // Define the relationship with Post
+  post         Post[]
+  // Define the relationship with comment
+  comments     Comment[]
+  // Define the relationship with friends where the user is user1
+  friends1     Friends[]     @relation("User1Friends")
+  // Define the relationship with friends where the user is user2
+  friends2     Friends[]     @relation("User2Friends")
+  // Define the relationship with likes
+  likes        Like[]
+}
+
+model Widget {
+  id             Int      @id @default(autoincrement())
+  type           String   // Type of the widget (e.g., "clock", "weather", "contactForm", etc.)
+  configuration  Json     // Configuration options for the widget (e.g., color, size, location, etc.)
+  userId         Int      // Foreign key reference to the User who added the widget
+  user           User     @relation(fields: [userId], references: [id])
+}
+
+model Like {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  postId    Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  post      Post     @relation(fields: [postId], references: [id])
+}
+
+model Friends {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  user1     User     @relation("User1Friends", fields: [userId1], references: [id])
+  userId1   Int
+  user2     User     @relation("User2Friends", fields: [userId2], references: [id])
+  userId2   Int
+}
+
+model Post {
+  id             Int           @id @default(autoincrement())
+  content        String
+  published      Boolean
+  createdAt      DateTime      @default(now())
+  author         User?         @relation(fields: [authorId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  authorId       Int?
+  comments       Comment[]
+  Post_tag       Post_tag[]
+  tagId          Int?
+  likes          Like[]
+  video          String?
+  image          String?
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  text      String
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  userId    Int
+  Vote      Vote[]
+}
+
+model Tag {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  Post_tag Post_tag[]
+}
+
+model Post_tag {
+  id        Int  @id @default(autoincrement())
+  post      Post @relation(fields: [postId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  postId    Int
+  tag       Tag  @relation(fields: [tagId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  tagId     Int
+  commentId Int?
+}
+
+model Vote {
+  id        Int     @id @default(autoincrement())
+  comment   Comment @relation(fields: [commentId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  commentId Int
+  user      User?   @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  userId    Int?
+  type      String
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
