@@ -78,4 +78,13 @@ apiRouter.use('/widget', widgetRouter);
 const votesRouter = require('./votes');
 apiRouter.use('/votes', votesRouter);
 
+const nameSearchRouter = require('./nameSearch');
+apiRouter.use('/nameSearch', nameSearchRouter);
+
+const postSearchRouter = require('./postSearch');
+apiRouter.use('/postSearch', postSearchRouter);
+
+const tokenVerificationRouter = require('./tokenVerification');
+apiRouter.use('/tokenVerification', tokenVerificationRouter);
+
 module.exports = apiRouter;
