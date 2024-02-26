@@ -72,4 +72,10 @@ apiRouter.use('/likes', likeRouter);
 const friendsRouter = require('./friends');
 apiRouter.use('/friends', friendsRouter);
 
+const widgetRouter = require('./widget');
+apiRouter.use('/widget', widgetRouter);
+
+const votesRouter = require('./votes');
+apiRouter.use('/votes', votesRouter);
+
 module.exports = apiRouter;

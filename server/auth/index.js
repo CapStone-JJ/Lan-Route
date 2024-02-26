@@ -10,6 +10,7 @@ const { authenticateUser, authorizeUser } = require("./middleware");
 router.post("/register", async (req, res, next) => {
     try {
         const { username, password, email, firstName, lastName } = req.body;
+        const hashedPassword = await bcrypt.hash(password, 10);
   
         const user = await prisma.user.create({
             data: {
@@ -17,7 +18,7 @@ router.post("/register", async (req, res, next) => {
                 lastName,
                 username,
                 email,
-                password,
+                password: hashedPassword,
             }
         });
   
