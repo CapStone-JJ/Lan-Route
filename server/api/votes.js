@@ -6,8 +6,18 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const { authenticateUser } = require("../auth/middleware");
 
+// Route for getting all votes for comment
+votesRouter.get('/', async (req, res) => {
+    try {
+      const votes = await prisma.vote.findMany();
+      res.json(votes);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch votes' });
+    }
+  });
+
 // Route for creating a new vote
-votesRouter.post('/votes', authenticateUser, async (req, res) => {
+votesRouter.post('/', authenticateUser, async (req, res) => {
     try {
       const { commentId, userId, type } = req.body;
       const vote = await prisma.vote.create({
@@ -23,19 +33,8 @@ votesRouter.post('/votes', authenticateUser, async (req, res) => {
     }
   });
 
-  
-// Route for getting all votes
-votesRouter.get('/votes', async (req, res) => {
-    try {
-      const votes = await prisma.vote.findMany();
-      res.json(votes);
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to fetch votes' });
-    }
-  });
-
   // Route for deleting a vote
-  votesRouter.delete('/votes/:id', authenticateUser, async (req, res) => {
+  votesRouter.delete('/:id', authenticateUser, async (req, res) => {
     const { id } = req.params;
     try {
       await prisma.vote.delete({
