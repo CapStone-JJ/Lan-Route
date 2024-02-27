@@ -7,7 +7,7 @@ const bcrypt = require("bcrypt");
 const { authenticateUser } = require("../auth/middleware");
 
 // Route for getting all widgets
-widgetRouter.get('/widgets', async (req, res) => {
+widgetRouter.get('/', async (req, res) => {
     try {
       const widgets = await prisma.widget.findMany();
       res.json(widgets);
@@ -17,7 +17,7 @@ widgetRouter.get('/widgets', async (req, res) => {
   });
 
 // Route for creating a new widget
-widgetRouter.post('/widgets', authenticateUser, async (req, res) => {
+widgetRouter.post('/', authenticateUser, async (req, res) => {
     try {
       const { type, configuration, userId } = req.body;
       const widget = await prisma.widget.create({
@@ -34,7 +34,7 @@ widgetRouter.post('/widgets', authenticateUser, async (req, res) => {
   });
 
 // Route for updating a widget
-widgetRouter.put('/widgets/:id', authenticateUser, async (req, res) => {
+widgetRouter.put('/:id', authenticateUser, async (req, res) => {
     const { id } = req.params;
     const { type, configuration, userId } = req.body;
     try {
@@ -53,7 +53,7 @@ widgetRouter.put('/widgets/:id', authenticateUser, async (req, res) => {
   });  
 
 // Route for deleting a widget
-widgetRouter.delete('/widgets/:id', authenticateUser, async (req, res) => {
+widgetRouter.delete('/:id', authenticateUser, async (req, res) => {
     const { id } = req.params;
     try {
       await prisma.widget.delete({

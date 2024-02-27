@@ -29,13 +29,13 @@ tokenVerificationRouter.get('/verify/:identifier/:token', async (req, res, next)
                 },
             });
 
-            // Optionally, you can delete the verification token from the database after successful verification
+            // Delete the verification token from the verification token database after successful verification
             await prisma.verificationToken.delete({
                 where: {
                     id: verificationToken.id,
                 },
             });
-            
+
         } else {
             // Token is invalid or has expired
             res.status(404).json({ error: 'Token not found or has expired' });

@@ -26,6 +26,7 @@ model User {
   location      String?
   viewedProfile Int    @default(0)
   impressions   Int    @default(0)
+  emailVerified  Boolean   @default(false)
 
   // Define the relationship with Post
   post         Post[]

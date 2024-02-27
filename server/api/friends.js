@@ -6,6 +6,80 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const { authenticateUser } = require("../auth/middleware");
 
+// Get a list of friends for a specific user by user ID
+friendsRouter.get("/users/:userId/friends", async (req, res, next) => {
+    try {
+        const userId = parseInt(req.params.userId);
+
+        // Find all friendships where the specified user is either userId1 or userId2
+        const friendships = await prisma.friends.findMany({
+            where: {
+                OR: [
+                    { userId1: userId },
+                    { userId2: userId }
+                ]
+            },
+            include: {
+                // Include user details for each friend
+                user1: true,
+                user2: true
+            }
+        });
+
+        // Extract the details of the friends
+        const friends = friendships.map(friendship => {
+            // Determine which user is the friend based on the user IDs in the friendship
+            const friendUser = friendship.userId1 === userId ? friendship.user2 : friendship.user1;
+            return {
+                id: friendUser.id,
+                username: friendUser.username,
+                // Include other details of the friend as needed
+            };
+        });
+
+        res.status(200).json(friends);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Get a list of friends for authenticated user
+friendsRouter.get("/", async (req, res, next) => {
+    try {
+        const userId = req.user.id; // Assuming you have stored the authenticated user's ID in the request object
+
+        // Find all friendships where the user is either userId1 or userId2
+        const friendships = await prisma.friends.findMany({
+            where: {
+                OR: [
+                    { userId1: userId },
+                    { userId2: userId }
+                ]
+            },
+            include: {
+                // Include user details for each friend
+                user1: true,
+                user2: true
+            }
+        });
+
+        // Extract the details of the friends
+        const friends = friendships.map(friendship => {
+            // Determine which user is the friend based on the user IDs in the friendship
+            const friendUser = friendship.userId1 === userId ? friendship.user2 : friendship.user1;
+            return {
+                id: friendUser.id,
+                username: friendUser.username,
+                // Include other details of the friend as needed
+            };
+        });
+
+        res.status(200).json(friends);
+    } catch (error) {
+        next(error);
+    }
+});
+
 // Create a friendship between two users
 friendsRouter.post("/", authenticateUser, async (req, res, next) => {
     try {
