@@ -19,8 +19,23 @@ tokenVerificationRouter.get('/verify/:identifier/:token', async (req, res, next)
         });
 
         if (verificationToken) {
-            // Token is valid
-            res.status(200).json({ message: 'Token is valid' });
+            // Mark the user's email as verified in the database
+            await prisma.user.update({
+                where: {
+                    email: identifier,
+                },
+                data: {
+                    emailVerified: true,
+                },
+            });
+
+            // Optionally, you can delete the verification token from the database after successful verification
+            await prisma.verificationToken.delete({
+                where: {
+                    id: verificationToken.id,
+                },
+            });
+            
         } else {
             // Token is invalid or has expired
             res.status(404).json({ error: 'Token not found or has expired' });

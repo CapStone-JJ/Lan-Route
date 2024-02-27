@@ -6,11 +6,23 @@ const prisma = new PrismaClient();
 const bcrypt = require('bcrypt');
 const { authenticateUser, authorizeUser } = require("./middleware");
 
+function generateVerificationToken() {
+  const tokenLength = 10;
+  const characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let token = '';
+  for (let i = 0; i < tokenLength; i++) {
+    token += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return token;
+}
+
 // Create a new user
 router.post("/register", async (req, res, next) => {
     try {
         const { username, password, email, firstName, lastName } = req.body;
         const hashedPassword = await bcrypt.hash(password, 10);
+
+        const verificationToken = generateVerificationToken(); // Implement this function
   
         const user = await prisma.user.create({
             data: {
@@ -21,6 +33,15 @@ router.post("/register", async (req, res, next) => {
                 password: hashedPassword,
             }
         });
+
+      // Store the verification token in the database
+      await prisma.verificationToken.create({
+        data: {
+            identifier: email, // Use email as the identifier
+            token: verificationToken,
+            expires: new Date(Date.now() + (24 * 60 * 60 * 1000)), // Set expiration time (e.g., 24 hours from now)
+        },
+    });  
   
         // Send response with token and user ID
         res.status(201).send({ message: "New Account Created" });
