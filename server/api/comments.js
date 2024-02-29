@@ -40,7 +40,7 @@ commentRouter.post("/", authenticateUser, async (req, res, next) => {
         }
   
         // Create a new comment with the author set to the retrieved user
-        const comment = await prisma.comment.create({
+        const comments = await prisma.comment.create({
             data: {
                 text,
                 postId: parseInt(postId),
@@ -48,7 +48,7 @@ commentRouter.post("/", authenticateUser, async (req, res, next) => {
             },
         });
   
-        res.status(201).send(comment);
+        res.status(201).send(comments);
     } catch (error) {
         console.error('Error creating comment:', error);
         next(error);
@@ -62,14 +62,14 @@ commentRouter.delete("/:id", authenticateUser, async (req, res, next) => {
     try {
   
         // Check if the comment exists and if the logged-in user is the author of the comment
-        const comment = await prisma.comment.findFirst({
+        const comments = await prisma.comment.findFirst({
             where: {
                 id: commentId,
                 userId: userId
             }
         });
   
-        if (!comment) {
+        if (!comments) {
             return res.status(404).send("Comment not found or you are not authorized to delete it.");
         }
   

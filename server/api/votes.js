@@ -20,14 +20,14 @@ votesRouter.get('/', async (req, res) => {
 votesRouter.post('/', authenticateUser, async (req, res) => {
     try {
       const { commentId, userId, type } = req.body;
-      const vote = await prisma.vote.create({
+      const votes = await prisma.vote.create({
         data: {
           commentId,
           userId,
           type
         }
       });
-      res.json(vote);
+      res.json(votes);
     } catch (error) {
       res.status(500).json({ error: 'Failed to create vote' });
     }

@@ -20,14 +20,14 @@ widgetRouter.get('/', async (req, res) => {
 widgetRouter.post('/', authenticateUser, async (req, res) => {
     try {
       const { type, configuration, userId } = req.body;
-      const widget = await prisma.widget.create({
+      const widgets = await prisma.widget.create({
         data: {
           type,
           configuration,
           userId
         }
       });
-      res.json(widget);
+      res.json(widgets);
     } catch (error) {
       res.status(500).json({ error: 'Failed to create widget' });
     }

@@ -9,8 +9,8 @@ const { authenticateUser } = require("../auth/middleware");
 // Get all Tags for a post
 tagRouter.get('/', async (req, res, next) => {
     try {
-        const tag = await prisma.tag.findMany();
-        res.json(tag);
+        const tags = await prisma.tag.findMany();
+        res.json(tags);
     } catch (error) {
         next(error);
     }
@@ -19,18 +19,18 @@ tagRouter.get('/', async (req, res, next) => {
 // Get a tag by id
 tagRouter.get("/:id", async (req, res, next) => {
     try {
-      const tag = await prisma.tag.findFirst({
+      const tags= await prisma.tag.findFirst({
         where: {
           id: parseInt(req.params.id),
           // userId: req.user.id,
         },
       });
   
-      if (!tag) {
+      if (!tags) {
         return res.status(404).send("Tag not found.");
       }
   
-      res.send(tag);
+      res.send(tags);
     } catch (error) {
       next(error);
     }
@@ -41,7 +41,7 @@ tagRouter.get("/:id", async (req, res, next) => {
 tagRouter.post("/", authenticateUser, async (req, res, next) => {
     try {
         const { name } = req.body;
-      const tag = await prisma.tag.create({
+      const tags = await prisma.tag.create({
         data: {
           name,
       },
@@ -58,11 +58,11 @@ tagRouter.delete('/:id', authenticateUser, async (req, res, next) => {
       const tagId = parseInt(req.params.id);
   
       // Check if the tag exists
-      const tag = await prisma.tag.findUnique({
+      const tags = await prisma.tag.findUnique({
         where: { id: tagId }
       });
   
-      if (!tag) {
+      if (!tags) {
         return res.status(404).json({ error: 'Tag not found' });
       }
   

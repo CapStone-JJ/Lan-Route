@@ -23,7 +23,7 @@ likeRouter.get('/:postId', async (req, res, next) => {
 likeRouter.post("/", authenticateUser, async (req, res, next) => {
     try {
         const { userId, postId } = req.body;
-        const like = await prisma.like.create({
+        const likes = await prisma.like.create({
             data: {
                 userId: parseInt(userId),
                 postId: parseInt(postId)
@@ -41,11 +41,11 @@ likeRouter.delete('/:id', authenticateUser, async (req, res, next) => {
         const likeId = parseInt(req.params.id);
 
         // Check if the like exists
-        const like = await prisma.like.findUnique({
+        const likes = await prisma.like.findUnique({
             where: { id: likeId }
         });
 
-        if (!like) {
+        if (!likes) {
             return res.status(404).json({ error: 'Like not found' });
         }
 

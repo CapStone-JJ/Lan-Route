@@ -9,8 +9,8 @@ const { authenticateUser } = require("../auth/middleware");
 // Get all posts
 postsRouter.get("/", async (req, res, next) => {
     try {
-      const post = await prisma.post.findMany();
-      res.send(post);
+      const posts = await prisma.post.findMany();
+      res.send(posts);
     } catch (error) {
       next(error);
     }
@@ -20,17 +20,17 @@ postsRouter.get("/", async (req, res, next) => {
 postsRouter.get("/:id", async (req, res, next) => {
     try {
       const postId = parseInt(req.params.id);
-      const post = await prisma.post.findUnique({
+      const posts = await prisma.post.findUnique({
         where: {
           id: postId
         },
     });
   
-    if (!post) {
+    if (!posts) {
         return res.status(404).send("Post not found.");
     }
   
-    res.send(post);
+    res.send(posts);
     } catch (error) {
     next(error);
     }
@@ -58,7 +58,7 @@ postsRouter.post("/", authenticateUser, async (req, res, next) => {
         }
   
         // Create a new post with the author set to the retrieved user
-        const post = await prisma.post.create({
+        const posts = await prisma.post.create({
             data: {
                 content,
                 published, 
@@ -66,7 +66,7 @@ postsRouter.post("/", authenticateUser, async (req, res, next) => {
             },
         });
   
-        res.status(201).send(post);
+        res.status(201).send(posts);
     } catch (error) {
         console.error('Error creating post:', error);
         next(error);
@@ -83,7 +83,7 @@ postsRouter.delete("/:id", authenticateUser, async (req, res, next) => {
         const userId = decoded.id;
   
         // Check if the post exists and if the logged-in user is the author of the post
-        const post = await prisma.post.findFirst({
+        const posts = await prisma.post.findFirst({
             where: {
                 id: postId,
                 author: {
@@ -92,7 +92,7 @@ postsRouter.delete("/:id", authenticateUser, async (req, res, next) => {
             }
         });
   
-        if (!post) {
+        if (!posts) {
             return res.status(404).send("Post not found or you are not authorized to delete it.");
         }
   
