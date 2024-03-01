@@ -38,13 +38,12 @@ postsRouter.get("/:id", async (req, res, next) => {
 
 // Create a new post
 postsRouter.post("/", authenticateUser, async (req, res, next) => {
-    const { title, content, published } = req.body;
-    
+    const { content, published } = req.body;
     try {
         const token = req.headers.authorization.split(" ")[1]; // Extract the token
         const decoded = jwt.verify(token, process.env.JWT_SECRET); // Verify the token
-        const userId = decoded.id;
-  
+        const userId = decoded.id; // Extract the userId from the decoded token
+
         // Retrieve the user data based on the user ID obtained from the token
         const user = await prisma.user.findUnique({
             where: {
@@ -73,15 +72,54 @@ postsRouter.post("/", authenticateUser, async (req, res, next) => {
     }
   });
 
-// Delete a post 
-postsRouter.delete("/:id", authenticateUser, async (req, res, next) => {
+  // Edit a post
+postsRouter.put("/:id", authenticateUser, async (req, res, next) => {
     const postId = parseInt(req.params.id);
-  
+    const { title, content, published } = req.body;
     try {
         const token = req.headers.authorization.split(" ")[1]; // Extract the token
         const decoded = jwt.verify(token, process.env.JWT_SECRET); // Verify the token
-        const userId = decoded.id;
-  
+        const userId = decoded.id; // Extract the userId from the decoded token
+
+        // Check if the post exists and if the logged-in user is the author of the post
+        const post = await prisma.post.findFirst({
+            where: {
+                id: postId,
+                author: {
+                    id: userId
+                }
+            }
+        });
+
+        if (!post) {
+            return res.status(404).send("Post not found or you are not authorized to edit it.");
+        }
+
+        // Update the post
+        const updatedPost = await prisma.post.update({
+            where: { id: postId },
+            data: {
+                title,
+                content,
+                published
+            }
+        });
+
+        res.send(updatedPost);
+    } catch (error) {
+        console.error('Error editing post:', error);
+        next(error);
+    }
+});
+
+// Delete a post 
+postsRouter.delete("/:id", authenticateUser, async (req, res, next) => {
+    const postId = parseInt(req.params.id);
+    try {
+        const token = req.headers.authorization.split(" ")[1]; // Extract the token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET); // Verify the token
+        const userId = decoded.id; // Extract the userId from the decoded token
+
         // Check if the post exists and if the logged-in user is the author of the post
         const posts = await prisma.post.findFirst({
             where: {
