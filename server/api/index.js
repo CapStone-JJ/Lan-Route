@@ -87,4 +87,7 @@ apiRouter.use('/postSearch', postSearchRouter);
 const tokenVerificationRouter = require('./tokenVerification');
 apiRouter.use('/tokenVerification', tokenVerificationRouter);
 
+const feedRouter = require('./feed');
+apiRouter.use('/feed', feedRouter);
+
 module.exports = apiRouter;
