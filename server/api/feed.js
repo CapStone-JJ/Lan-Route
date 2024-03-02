@@ -68,9 +68,17 @@ async function getUserFeed(userId) {
         },
         take: 10, // Fetch top 10 trending posts
       });
+
+      // Convert user's feed to Set to remove duplicates
+      const uniqueUserFeed = new Set(userFeed.map(post => post.id));
+
+      // Filter out trending posts that are already in the user's feed
+      const uniqueTrendingPosts = trendingPosts.filter(trendingPost => {
+        return !uniqueUserFeed.has(trendingPost.id);
+      });  
   
       // Combine user's feed and trending posts
-      const feedWithTrending = [...userFeed, ...trendingPosts];
+      const feedWithTrending = [...userFeed, ...uniqueTrendingPosts];
   
       // Sort combined feed by createdAt timestamp in descending order
       feedWithTrending.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
