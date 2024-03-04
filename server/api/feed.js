@@ -66,7 +66,13 @@ async function getUserFeed(userId) {
             _count: 'desc',
           },
         },
-        take: 10, // Fetch top 10 trending posts
+        take: 10,
+        include: {
+          comments: true,
+          likes: true,
+          author: true,
+          likes: true,  // Include likes relation
+        },
       });
 
       // Convert user's feed to Set to remove duplicates
@@ -75,7 +81,13 @@ async function getUserFeed(userId) {
       // Filter out trending posts that are already in the user's feed
       const uniqueTrendingPosts = trendingPosts.filter(trendingPost => {
         return !uniqueUserFeed.has(trendingPost.id);
-      });  
+      });
+      
+      // Include comments and likes in user's feed
+      userFeed.forEach(post => {
+      post.comments = post.comments || [];
+      post.likes = post.likes || [];
+    });
   
       // Combine user's feed and trending posts
       const feedWithTrending = [...userFeed, ...uniqueTrendingPosts];
