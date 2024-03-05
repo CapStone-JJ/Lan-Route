@@ -25,8 +25,8 @@ likeRouter.post("/", authenticateUser, async (req, res, next) => {
         const { userId, postId } = req.body;
         const likes = await prisma.like.create({
             data: {
-                userId: parseInt(userId),
-                postId: parseInt(postId)
+                user: { connect: { id: userId } },
+                postId: { connect: { id: postId }}
             }
         });
         res.status(201).send({ message: "Like has been created." });

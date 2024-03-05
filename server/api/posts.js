@@ -9,30 +9,45 @@ const { authenticateUser } = require("../auth/middleware");
 // Get all posts
 postsRouter.get("/", async (req, res, next) => {
     try {
-      const posts = await prisma.post.findMany();
-      res.send(posts);
+        const posts = await prisma.post.findMany({
+            include: {
+                author: {
+                    select: {
+                        id: true // Include only the userId of the author
+                    }
+                },
+                Post_tag: { include: { tag: true } }
+            }
+        });
+        res.send(posts);
     } catch (error) {
-      next(error);
+        next(error);
     }
-  });
+});
 
 // Get posts by id
 postsRouter.get("/:id", async (req, res, next) => {
     try {
-      const postId = parseInt(req.params.id);
-      const posts = await prisma.post.findUnique({
-        where: {
-          id: postId
-        },
-    });
-  
-    if (!posts) {
-        return res.status(404).send("Post not found.");
-    }
-  
-    res.send(posts);
+        const postId = parseInt(req.params.id);
+        const post = await prisma.post.findUnique({
+            where: { id: postId },
+            include: {
+                author: {
+                    select: {
+                        id: true // Include only the userId of the author
+                    }
+                },
+                Post_tag: { include: { tag: true } }
+            }
+        });
+
+        if (!post) {
+            return res.status(404).send("Post not found.");
+        }
+
+        res.send(post);
     } catch (error) {
-    next(error);
+        next(error);
     }
 });
 

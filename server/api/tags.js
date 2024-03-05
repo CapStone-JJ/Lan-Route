@@ -37,20 +37,34 @@ tagRouter.get("/:id", async (req, res, next) => {
   });
 
 
-// Create a new Tag
-tagRouter.post("/", authenticateUser, async (req, res, next) => {
+  tagRouter.post("/", authenticateUser, async (req, res, next) => {
     try {
-        const { name } = req.body;
-      const tags = await prisma.tag.create({
-        data: {
-          name,
-      },
-      });
-      res.status(201).send({ message: "Tag has been created." });
+        const { name } = req.body.variables;
+        
+        // Check if the tag already exists
+        const existingTag = await prisma.tag.findUnique({
+            where: {
+                name: name,
+            },
+        });
+
+        if (existingTag) {
+            // Tag already exists, send an appropriate response
+            return res.status(400).json({ message: 'Tag already exists.' });
+        }
+
+        // Create the tag if it doesn't exist
+        const createdTag = await prisma.tag.create({
+            data: {
+                name,
+            },
+        });
+
+        res.status(201).send({ message: "Tag has been created.", tag: createdTag });
     } catch (error) {
-      next(error);
+        next(error);
     }
-  });
+});
 
 // Delete a comment 
 tagRouter.delete('/:id', authenticateUser, async (req, res, next) => {
