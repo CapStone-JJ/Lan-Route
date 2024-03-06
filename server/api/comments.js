@@ -54,26 +54,30 @@ commentRouter.post("/", authenticateUser, async (req, res, next) => {
 // Delete a comment
 commentRouter.delete("/:id", authenticateUser, async (req, res, next) => {
   const commentId = parseInt(req.params.id);
+  // Corrected: Extract userId from req.user
+  const userId = req.user.id;
 
   try {
     // Check if the comment exists and if the logged-in user is the author of the comment
-    const comments = await prisma.comment.findFirst({
+    const comment = await prisma.comment.findUnique({
       where: {
         id: commentId,
-        userId: userId,
       },
     });
 
-    if (!comments) {
+    // Check if comment exists and if the user is authorized to delete it
+    if (!comment || comment.userId !== userId) {
       return res
         .status(404)
-        .send("Comment not found or you are not authorized to delete it.");
+        .json({
+          message: "Comment not found or you are not authorized to delete it.",
+        });
     }
 
     // Delete the comment
     await prisma.comment.delete({ where: { id: commentId } });
 
-    res.send("Comment deleted successfully.");
+    res.json({ message: "Comment deleted successfully." });
   } catch (error) {
     console.error("Error deleting comment:", error);
     next(error);
