@@ -11,12 +11,8 @@ postsRouter.get("/", async (req, res, next) => {
     try {
         const posts = await prisma.post.findMany({
             include: {
-                author: {
-                    select: {
-                        id: true // Include only the userId of the author
-                    }
-                },
-                Post_tag: { include: { tag: true } }
+                author: { select: { username: true } },
+                Post_tag: { include: { tag: true } } // Include the name of the tags
             }
         });
         res.send(posts);
@@ -24,6 +20,7 @@ postsRouter.get("/", async (req, res, next) => {
         next(error);
     }
 });
+
 
 // Get posts by id
 postsRouter.get("/:id", async (req, res, next) => {
@@ -34,7 +31,8 @@ postsRouter.get("/:id", async (req, res, next) => {
             include: {
                 author: {
                     select: {
-                        id: true // Include only the userId of the author
+                        id: true,
+                        username: true
                     }
                 },
                 Post_tag: { include: { tag: true } }
@@ -51,9 +49,9 @@ postsRouter.get("/:id", async (req, res, next) => {
     }
 });
 
-// Create a new post
+// Create a new post with associated tags
 postsRouter.post("/", authenticateUser, async (req, res, next) => {
-    const { content, published } = req.body;
+    const { content, published, tags } = req.body;
     try {
         const token = req.headers.authorization.split(" ")[1]; // Extract the token
         const decoded = jwt.verify(token, process.env.JWT_SECRET); // Verify the token
@@ -65,27 +63,45 @@ postsRouter.post("/", authenticateUser, async (req, res, next) => {
                 id: userId
             }
         });
-  
+
         if (!user) {
             // Handle the case where the user is not found
             return res.status(404).send("User not found.");
         }
-  
-        // Create a new post with the author set to the retrieved user
-        const posts = await prisma.post.create({
+
+        // Create the post along with its associated tags
+        const createdPost = await prisma.post.create({
             data: {
                 content,
-                published, 
-                author: { connect: { id: userId } }
+                published,
+                author: { connect: { id: userId } },
+                // Create the tags and associate them with the post
+                Post_tag: {
+                    create: tags.map(tag => ({
+                        tag: {
+                            connectOrCreate: {
+                                where: { name: tag },
+                                create: { name: tag }
+                            }
+                        }
+                    }))
+                }
             },
+            include: {
+                Post_tag: {
+                    include: {
+                        tag: true // Include associated tags in the response
+                    }
+                }
+            }
         });
-  
-        res.status(201).send(posts);
+
+        res.status(201).send(createdPost);
     } catch (error) {
         console.error('Error creating post:', error);
         next(error);
     }
-  });
+});
 
   // Edit a post
 postsRouter.put("/:id", authenticateUser, async (req, res, next) => {
