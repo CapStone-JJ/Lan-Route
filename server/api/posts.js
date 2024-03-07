@@ -147,33 +147,41 @@ postsRouter.put("/:id", authenticateUser, async (req, res, next) => {
 postsRouter.delete("/:id", authenticateUser, async (req, res, next) => {
     const postId = parseInt(req.params.id);
     try {
-        const token = req.headers.authorization.split(" ")[1]; // Extract the token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET); // Verify the token
-        const userId = decoded.id; // Extract the userId from the decoded token
+        // Extract user ID from the decoded token
+        const userId = req.user.id;
 
-        // Check if the post exists and if the logged-in user is the author of the post
-        const posts = await prisma.post.findFirst({
+        // Find the post and check if the user is authorized to delete it
+        const post = await prisma.post.findFirst({
             where: {
                 id: postId,
-                author: {
-                    id: userId
-                }
+                authorId: userId // Ensure that the logged-in user is the author of the post
             }
         });
-  
-        if (!posts) {
+
+        // If the post is not found or the user is not authorized, return 404
+        if (!post) {
             return res.status(404).send("Post not found or you are not authorized to delete it.");
         }
-  
-        // Delete the post
+
+        // Delete related likes first
+        await prisma.like.deleteMany({
+            where: {
+                postId: postId
+            }
+        });
+
+        // Then delete the post
         await prisma.post.delete({ where: { id: postId } });
-  
-        res.send("Post deleted successfully.");
+
+        // Return success message
+        res.status(200).json({ message: "Post deleted successfully." });
     } catch (error) {
         console.error('Error deleting post:', error);
         next(error);
     }
-  });
+});
+
+
 
 
 module.exports = postsRouter;
