@@ -11,6 +11,9 @@ async function getUserFeed(userId) {
       where: {
         authorId: userId,
       },
+      include: {
+        author: true,
+      }
     });
 
     // Query user's friends
@@ -87,6 +90,7 @@ async function getUserFeed(userId) {
       userFeed.forEach(post => {
       post.comments = post.comments || [];
       post.likes = post.likes || [];
+
     });
   
       // Combine user's feed and trending posts
