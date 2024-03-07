@@ -48,24 +48,88 @@ postsRouter.get("/:id", async (req, res, next) => {
   }
 });
 
+postsRouter.get("/user/:userId", async (req, res, next) => {
+    try {
+        const userId = parseInt(req.params.userId);
+        const posts = await prisma.post.findMany({
+            where: {
+                authorId: userId
+            },
+            include: {
+                author: { select: { username: true } },
+                Post_tag: { include: { tag: true } } // Include the name of the tags
+            }
+        });
+        res.send(posts);
+    } catch (error) {
+        next(error);
+    }
+});
+
 // Create a new post with associated tags
 postsRouter.post("/", authenticateUser, async (req, res, next) => {
-  const { content, published, tags } = req.body;
-  try {
-    const token = req.headers.authorization.split(" ")[1]; // Extract the token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET); // Verify the token
-    const userId = decoded.id; // Extract the userId from the decoded token
+    const { content, published, tags } = req.body;
+    try {
+        const token = req.headers.authorization.split(" ")[1]; // Extract the token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET); // Verify the token
+        const userId = decoded.id; // Extract the userId from the decoded token
 
-    // Retrieve the user data based on the user ID obtained from the token
-    const user = await prisma.user.findUnique({
-      where: {
-        id: userId,
-      },
-    });
+        // Retrieve the user data based on the user ID obtained from the token
+        const user = await prisma.user.findUnique({
+            where: {
+                id: userId
+            }
+        });
 
-    if (!user) {
-      // Handle the case where the user is not found
-      return res.status(404).send("User not found.");
+        if (!user) {
+            // Handle the case where the user is not found
+            return res.status(404).send("User not found.");
+        }
+
+        // Create the post
+        const createdPost = await prisma.post.create({
+            data: {
+                content,
+                published,
+                author: { connect: { id: userId } },
+            },
+        });
+
+        // Create or connect tags
+        const tagPromises = tags.map(async tagName => {
+            const existingTag = await prisma.tag.findUnique({
+                where: { name: tagName }
+            });
+
+            if (existingTag) {
+                // Tag already exists, just connect it to the post
+                return prisma.post_tag.create({
+                    data: {
+                        post: { connect: { id: createdPost.id } },
+                        tag: { connect: { id: existingTag.id } }
+                    }
+                });
+            } else {
+                // Tag doesn't exist, create it and connect it to the post
+                const newTag = await prisma.tag.create({
+                    data: { name: tagName }
+                });
+                return prisma.post_tag.create({
+                    data: {
+                        post: { connect: { id: createdPost.id } },
+                        tag: { connect: { id: newTag.id } }
+                    }
+                });
+            }
+        });
+
+        // Wait for all tag promises to resolve
+        await Promise.all(tagPromises);
+
+        res.status(201).send(createdPost);
+    } catch (error) {
+        console.error('Error creating post:', error);
+        next(error);
     }
 
     // Create the post along with its associated tags
