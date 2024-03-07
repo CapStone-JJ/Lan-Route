@@ -73,7 +73,7 @@ model Post {
   createdAt      DateTime      @default(now())
   author         User?         @relation(fields: [authorId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   authorId       Int?
-  comments       Comment[]
+  comments       Comment[]    
   Post_tag       Post_tag[]
   tagId          Int?
   likes          Like[]        @relation("PostLikes")
@@ -84,7 +84,7 @@ model Post {
 model Comment {
   id        Int      @id @default(autoincrement())
   text      String
-  post      Post     @relation(fields: [postId], references: [id])
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   postId    Int
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
