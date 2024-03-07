@@ -79,6 +79,7 @@ model Post {
   likes          Like[]        @relation("PostLikes")
   video          String?
   image          String?
+  tags            Tag[]
 }
 
 model Comment {
@@ -96,6 +97,7 @@ model Tag {
   id   Int    @id @default(autoincrement())
   name String @unique
   Post_tag Post_tag[]
+  posts Post[]
 }
 
 model Post_tag {
