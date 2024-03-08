@@ -48,6 +48,7 @@ postsRouter.get("/:id", async (req, res, next) => {
   }
 });
 
+// Get posts by user
 postsRouter.get("/user/:userId", async (req, res, next) => {
     try {
         const userId = parseInt(req.params.userId);
