@@ -5,59 +5,56 @@ const prisma = new PrismaClient();
 const { authenticateUser } = require("../auth/middleware");
 
 // Get all likes for a post
-likeRouter.get('/:postId', async (req, res, next) => {
-    try {
-        const { postId } = req.params;
-        const likes = await prisma.like.findMany({
-            where: {
-                postId: parseInt(postId)
-            }
-        });
-        res.json(likes);
-    } catch (error) {
-        next(error);
-    }
+likeRouter.get("/:postId", async (req, res, next) => {
+  try {
+    const { postId } = req.params;
+    const likes = await prisma.like.findMany({
+      where: {
+        postId: parseInt(postId),
+      },
+    });
+    res.json(likes);
+  } catch (error) {
+    next(error);
+  }
 });
 
 // Create a new like
 likeRouter.post("/", authenticateUser, async (req, res, next) => {
-    try {
-        const { userId, postId } = req.body;
-        const likes = await prisma.like.create({
-            data: {
-                user: { connect: { id: userId } },
-                postId: { connect: { id: postId }}
-            }
-        });
-        res.status(201).send({ message: "Like has been created." });
-    } catch (error) {
-        next(error);
-    }
+  try {
+    const { userId, postId } = req.body;
+    const newLike = await prisma.like.create({
+      data: {
+        userId: userId,
+        postId: postId,
+      },
+    });
+    res.status(201).send({ message: "Like has been created." });
+  } catch (error) {
+    next(error);
+  }
 });
 
 // Delete a like
-likeRouter.delete('/:id', authenticateUser, async (req, res, next) => {
-    try {
-        const likeId = parseInt(req.params.id);
+likeRouter.delete("/", authenticateUser, async (req, res, next) => {
+  const { userId, postId } = req.query;
+  try {
+    const deletedLike = await prisma.like.deleteMany({
+      where: {
+        AND: [{ userId: parseInt(userId) }, { postId: parseInt(postId) }],
+      },
+    });
 
-        // Check if the like exists
-        const likes = await prisma.like.findUnique({
-            where: { id: likeId }
-        });
-
-        if (!likes) {
-            return res.status(404).json({ error: 'Like not found' });
-        }
-
-        // Delete the like
-        await prisma.like.delete({
-            where: { id: likeId }
-        });
-
-        res.status(201).send({ message: "Like has been Deleted." });
-    } catch (error) {
-        next(error);
+    if (deletedLike.count === 0) {
+      return res
+        .status(404)
+        .json({ message: "Like not found or already deleted" });
     }
+
+    res.json({ message: "Like deleted successfully" });
+  } catch (error) {
+    next(error);
+  }
 });
 
 module.exports = likeRouter;
