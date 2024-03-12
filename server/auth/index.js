@@ -44,7 +44,7 @@ router.post("/register", async (req, res, next) => {
     });  
   
         // Send response with token and user ID
-        res.status(201).send({ message: "New Account Created" });
+        res.status(201).send({ user, message: "New Account Created" });
     } catch (err) {
         // Handle error
         next(err);
@@ -101,50 +101,61 @@ router.get("/me", authenticateUser, async (req, res, next) => {
 
 // Update a user
 router.put("/:id", authenticateUser, async (req, res, next) => {
-    try {
-      const { username, password, email, firstName, lastName } = req.body;
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
-      const user = await prisma.user.update({
-        data: {  
-            firstName,
-            lastName,
-            username,
-            email,
-            password: hashedPassword
+  try {
+    // todo clean req.body
+    const { username, password, email, firstName, lastName, location, bio } = req.body.body;
+    console.log("Received password:", password);
+    console.log(req.body)
+
+    // Hash the password
+    const salt = await bcrypt.genSalt(10);
+    console.log("Generated salt:", salt);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    console.log("Hashed password:", hashedPassword);
+
+    // Update the user in the database
+    const user = await prisma.user.update({
+      where: {
+        id: parseInt(req.params.id),
       },
-        where: {
-          id: parseInt(req.params.id),
-        },
-      });
-  
-      if (!user) {
-        return res.status(404).send("User not found.");
-      }
-  
-      res.status(201).send({ message: "Account has been updated." });
-    } catch (error) {
-      next(error);
+      data: {
+        firstName,
+        lastName,
+        username,
+        location,
+        bio,
+        email,
+        password: hashedPassword,
+      },
+    });
+
+    // Check if user was successfully updated
+    if (!user) {
+      return res.status(404).send("User not found.");
     }
-  });
+
+    // Send success response
+    res.status(201).send({ user, message: "Account has been updated." });
+  } catch (error) {
+    next(error); // Pass the error to the error handling middleware
+  }
+})
+
   
 // Delete a user by id
 router.delete("/:id", authenticateUser, async (req, res, next) => {
-    try {
+  try {
+      const userId = parseInt(req.params.id); // Parse the userId from request params
       const user = await prisma.user.delete({
-        where: {
-          id: parseInt(req.params.id),
-        },
+          where: {
+              id: userId // Pass the userId to the delete method
+          }
       });
-  
-      if (!user) {
-        return res.status(404).send("User not found.");
-      }
-  
-      res.status(200).send({message: "User account has been deleted successfully!"});
-    } catch (error) {
+      res.status(200).send({ message: "User account has been deleted successfully!" });
+  } catch (error) {
       next(error);
-    }
-  });
+  }
+});
+
 
 module.exports = router;
