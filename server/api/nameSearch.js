@@ -5,6 +5,8 @@ const prisma = new PrismaClient();
 
 nameSearchRouter.get('/:search', async (req, res, next) => {
     try {
+        console.log('Received search term:', req.params.search);
+
         const users = await prisma.user.findMany({
             where: {
                 OR: [
@@ -29,8 +31,10 @@ nameSearchRouter.get('/:search', async (req, res, next) => {
 
         res.json(users);
     } catch (error) {
+        console.error('Error in nameSearchRouter:', error);
         next(error);
     }
 });
 
 module.exports = nameSearchRouter;
+

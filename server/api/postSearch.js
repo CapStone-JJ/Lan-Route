@@ -5,6 +5,8 @@ const prisma = new PrismaClient();
 
 postSearchRouter.get('/:search', async (req, res, next) => {
     try {
+        console.log('Received search term:', req.params.search);
+
         const posts = await prisma.post.findMany({
             where: {
                 OR: [
@@ -26,8 +28,10 @@ postSearchRouter.get('/:search', async (req, res, next) => {
 
         res.json(posts);
     } catch (error) {
+        console.error('Error in postSearchRouter:', error);
         next(error);
     }
 });
 
 module.exports = postSearchRouter;
+
