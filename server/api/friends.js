@@ -143,4 +143,61 @@ friendsRouter.delete("/:id", authenticateUser, async (req, res, next) => {
     }
 });
 
+// Create a friend request and notification
+friendsRouter.post("/request", authenticateUser, async (req, res, next) => {
+    try {
+        const senderId = req.user.id; // The ID of the user sending the request
+        const { recipientId } = req.body; // The ID of the user receiving the request
+
+        // Ensure the recipient ID is provided
+        if (!recipientId) {
+            return res.status(400).send("Recipient ID is required.");
+        }
+
+        // Prevent users from sending a friend request to themselves
+        if (senderId === recipientId) {
+            return res.status(400).send("Cannot send a friend request to yourself.");
+        }
+
+        // Check if a friend request already exists in either direction
+        const existingRequest = await prisma.friends.findFirst({
+            where: {
+                OR: [
+                    { userId1: senderId, userId2: recipientId },
+                    { userId1: recipientId, userId2: senderId }
+                ],
+                status: 'PENDING' // Assuming 'status' is a new field
+            }
+        });
+
+        if (existingRequest) {
+            return res.status(409).send("Friend request already exists.");
+        }
+
+        // Create the friend request with status 'PENDING'
+        await prisma.friends.create({
+            data: {
+                userId1: senderId,
+                userId2: recipientId,
+                status: 'PENDING'
+            }
+        });
+
+        // Create a notification for the recipient of the friend request
+        await prisma.notification.create({
+            data: {
+                type: 'FRIEND_REQUEST',
+                recipientId: recipientId,
+                triggerById: senderId,
+                // Add other fields as necessary
+            },
+        });
+
+        res.status(201).send({ message: "Friend request sent successfully." });
+    } catch (error) {
+        next(error);
+    }
+});
+
+
 module.exports = friendsRouter;

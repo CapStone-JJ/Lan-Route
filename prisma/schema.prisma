@@ -38,6 +38,11 @@ model User {
   friends2     Friends[]     @relation("User2Friends")
   // Define the relationship with likes
   likes        Like[]
+
+  // Notifications where the user is the recipient
+  receivedNotifications  Notification[] @relation("UserToReceivedNotifications")
+  // Notifications triggered by the user
+  triggeredNotifications Notification[] @relation("UserToTriggeredNotifications")
 }
 
 model Widget {
@@ -60,6 +65,7 @@ model Like {
 model Friends {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
+  status    String
   user1     User     @relation("User1Friends", fields: [userId1], references: [id], onDelete: Cascade)
   userId1   Int
   user2     User     @relation("User2Friends", fields: [userId2], references: [id], onDelete: Cascade)
@@ -79,7 +85,8 @@ model Post {
   likes          Like[]        @relation("PostLikes")
   video          String?
   image          String?
-  tags            Tag[]
+  tags           Tag[]
+  notifications  Notification[]  @relation("PostToNotifications")
 }
 
 model Comment {
@@ -91,6 +98,7 @@ model Comment {
   createdAt DateTime @default(now())
   userId    Int
   Vote      Vote[]
+  notifications  Notification[]  @relation("CommentToNotifications")
 }
 
 model Tag {
@@ -127,4 +135,18 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-
+model Notification {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  type        String   // Example values: "FRIEND_REQUEST", "LIKE", "COMMENT", "VOTE"
+  read        Boolean  @default(false)
+  recipientId Int
+  recipient   User     @relation(fields: [recipientId], references: [id], name: "UserToReceivedNotifications")
+  triggerById Int?
+  triggerBy   User?    @relation(fields: [triggerById], references: [id], name: "UserToTriggeredNotifications")
+  postId      Int?
+  post        Post?    @relation(fields: [postId], references: [id], name: "PostToNotifications")
+  commentId   Int?
+  comment     Comment? @relation(fields: [commentId], references: [id], name: "CommentToNotifications")
+}
