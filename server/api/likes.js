@@ -29,7 +29,25 @@ likeRouter.post("/", authenticateUser, async (req, res, next) => {
         postId: postId,
       },
     });
-    res.status(201).send({ message: "Like has been created." });
+
+    // Find the post to get the authorId
+    const post = await prisma.post.findUnique({
+      where: {
+          id: postId,
+      },
+  });
+
+  // Create a notification for the post's author
+  await prisma.notification.create({
+      data: {
+          type: 'LIKE',
+          recipientId: post.authorId,
+          triggerById: userId,
+          postId: postId,
+      },
+  });
+
+  res.status(201).send({ message: "Like added successfully, notification sent." });
   } catch (error) {
     next(error);
   }
