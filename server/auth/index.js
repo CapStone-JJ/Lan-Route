@@ -74,6 +74,7 @@ router.post("/register", async (req, res, next) => {
         expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // Set expiration time (e.g., 24 hours from now)
       },
     });
+    
 
     // Send response with token and user ID
     res.status(201).send({ message: "New Account Created" });
@@ -131,6 +132,50 @@ router.get("/me", authenticateUser, async (req, res, next) => {
   }
 });
 
+// Endpoint to get a user's profile by username
+router.get("/:username", async (req, res, next) => {
+  try {
+      const username = req.params.username;
+
+      // Query the database to find the user by their username
+      const user = await prisma.user.findUnique({
+          where: {
+              username: username,
+          },
+          select: {
+              id: true,
+              username: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              password: true,
+              createdAt: true,
+              admin: true,
+              image: true, // Include the image field
+              location: true,
+              viewedProfile: true,
+              impressions: true,
+              emailVerified: true,
+              post: true,
+              comments: true,
+              bio: true,
+          },
+      });
+
+      // Check if the user exists
+      if (!user) {
+          return res.status(404).json({ error: "User not found" });
+      }
+
+      // Return the user profile data
+      return res.json(user);
+  } catch (error) {
+      console.error("Error fetching user profile:", error);
+      return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
 // Update a user
 router.put("/:id", authenticateUser, async (req, res, next) => {
   try {
@@ -150,7 +195,7 @@ router.put("/:id", authenticateUser, async (req, res, next) => {
       },
     });
     // todo clean req.body
-    const { username, password, email, firstName, lastName, location, bio } = req.body.body;
+    const { username, password, email, firstName, lastName, location, bio, image } = req.body.body;
     console.log("Received password:", password);
     console.log(req.body)
 
@@ -173,6 +218,7 @@ router.put("/:id", authenticateUser, async (req, res, next) => {
         bio,
         email,
         password: hashedPassword,
+        image
       },
     });
 
