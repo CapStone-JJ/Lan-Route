@@ -34,7 +34,38 @@ router.post("/register", async (req, res, next) => {
         password: hashedPassword,
       },
     });
+    try {
+        const { username, password, email, firstName, lastName } = req.body;
+        const hashedPassword = await bcrypt.hash(password, 10);
 
+        const verificationToken = generateVerificationToken(); // Implement this function
+  
+        const user = await prisma.user.create({
+            data: {
+                firstName,
+                lastName,
+                username,
+                email,
+                password: hashedPassword,
+            }
+        });
+
+      // Store the verification token in the database
+      await prisma.verificationToken.create({
+        data: {
+            identifier: email, // Use email as the identifier
+            token: verificationToken,
+            expires: new Date(Date.now() + (24 * 60 * 60 * 1000)), // Set expiration time (e.g., 24 hours from now)
+        },
+    });  
+  
+        // Send response with token and user ID
+        res.status(201).send({ user, message: "New Account Created" });
+    } catch (err) {
+        // Handle error
+        next(err);
+    }
+  });
     // Store the verification token in the database
     await prisma.verificationToken.create({
       data: {
@@ -118,11 +149,37 @@ router.put("/:id", authenticateUser, async (req, res, next) => {
         id: parseInt(req.params.id),
       },
     });
+    // todo clean req.body
+    const { username, password, email, firstName, lastName, location, bio } = req.body.body;
+    console.log("Received password:", password);
+    console.log(req.body)
 
+    // Hash the password
+    const salt = await bcrypt.genSalt(10);
+    console.log("Generated salt:", salt);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    console.log("Hashed password:", hashedPassword);
+
+    // Update the user in the database
+    const user = await prisma.user.update({
+      where: {
+        id: parseInt(req.params.id),
+      },
+      data: {
+        firstName,
+        lastName,
+        username,
+        location,
+        bio,
+        email,
+        password: hashedPassword,
+      },
+    });
+
+    // Check if user was successfully updated
     if (!user) {
       return res.status(404).send("User not found.");
     }
-
     res.status(201).send({ message: "Account has been updated." });
   } catch (error) {
     next(error);
@@ -141,13 +198,32 @@ router.delete("/:id", authenticateUser, async (req, res, next) => {
     if (!user) {
       return res.status(404).send("User not found.");
     }
+    // Send success response
+    res.status(201).send({ user, message: "Account has been updated." });
+  } catch (error) {
+    next(error); // Pass the error to the error handling middleware
+  }
+})
 
-    res
-      .status(200)
+  
+// Delete a user by id
+router.delete("/:id", authenticateUser, async (req, res, next) => {
+  try {
+      const userId = parseInt(req.params.id); // Parse the userId from request params
+      const user = await prisma.user.delete({
+          where: {
+              id: userId // Pass the userId to the delete method
+          }
+      });
+      res.status(200).send({ message: "User account has been deleted successfully!" });
+  } catch (error) {
+      next(error);
+  }
+});
+    res.status(200)
       .send({ message: "User account has been deleted successfully!" });
   } catch (error) {
     next(error);
   }
 });
-
 module.exports = router;
