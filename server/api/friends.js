@@ -165,9 +165,11 @@ friendsRouter.get("/requests", authenticateUser, async (req, res) => {
 // Create a friend request and notification
 friendsRouter.post("/request", authenticateUser, async (req, res, next) => {
     try {
-        const senderId = req.user.id; // The ID of the user sending the request
-        const { recipientId } = req.body; // The ID of the user receiving the request
+        const senderId = parseInt(req.user.id); // The ID of the user sending the request
+        const recipientId = req.body.recipientId; // The ID of the user receiving the request
 
+        console.log(senderId);
+        console.log(recipientId)
         // Ensure the recipient ID is provided
         if (!recipientId) {
             return res.status(400).send("Recipient ID is required.");
@@ -181,8 +183,16 @@ friendsRouter.post("/request", authenticateUser, async (req, res, next) => {
         const existingRequest = await prisma.friendRequest.findFirst({
             where: {
                 OR: [
-                    { senderId, recipientId, status: 'PENDING' },
-                    { senderId: recipientId, recipientId: senderId, status: 'PENDING' }
+                    {
+                        senderId: senderId, // Assuming senderId is the ID of the logged-in user
+                        recipientId: recipientId,
+                        status: "PENDING"
+                    },
+                    {
+                        senderId: recipientId,
+                        recipientId: senderId,
+                        status: "PENDING"
+                    }
                 ]
             }
         });
