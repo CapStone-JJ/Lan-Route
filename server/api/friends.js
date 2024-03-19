@@ -143,6 +143,25 @@ friendsRouter.delete("/:id", authenticateUser, async (req, res, next) => {
     }
 });
 
+// Get a list of pending friend requests for the authenticated user
+friendsRouter.get("/requests", authenticateUser, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const requests = await prisma.friendRequest.findMany({
+            where: {
+                recipientId: userId,
+                status: 'PENDING'
+            },
+            include: {
+                sender: true 
+            }
+        });
+        res.json(requests);
+    } catch (error) {
+        res.status(500).send("Internal server error");
+    }
+});
+
 // Create a friend request and notification
 friendsRouter.post("/request", authenticateUser, async (req, res, next) => {
     try {
@@ -159,14 +178,12 @@ friendsRouter.post("/request", authenticateUser, async (req, res, next) => {
             return res.status(400).send("Cannot send a friend request to yourself.");
         }
 
-        // Check if a friend request already exists in either direction
-        const existingRequest = await prisma.friends.findFirst({
+        const existingRequest = await prisma.friendRequest.findFirst({
             where: {
                 OR: [
-                    { userId1: senderId, userId2: recipientId },
-                    { userId1: recipientId, userId2: senderId }
-                ],
-                status: 'PENDING' // Assuming 'status' is a new field
+                    { senderId, recipientId, status: 'PENDING' },
+                    { senderId: recipientId, recipientId: senderId, status: 'PENDING' }
+                ]
             }
         });
 
@@ -175,10 +192,10 @@ friendsRouter.post("/request", authenticateUser, async (req, res, next) => {
         }
 
         // Create the friend request with status 'PENDING'
-        await prisma.friends.create({
+        await prisma.friendRequest.create({
             data: {
-                userId1: senderId,
-                userId2: recipientId,
+                senderId,
+                recipientId,
                 status: 'PENDING'
             }
         });
@@ -198,6 +215,45 @@ friendsRouter.post("/request", authenticateUser, async (req, res, next) => {
         next(error);
     }
 });
+
+// Accept a friend request
+friendsRouter.post("/requests/:requestId/accept", authenticateUser, async (req, res) => {
+    const { requestId } = req.params;
+
+    try {
+        const request = await prisma.friendRequest.update({
+            where: { id: parseInt(requestId) },
+            data: { status: 'ACCEPTED' }
+        });
+
+        await prisma.friends.create({
+            data: {
+                userId1: acceptedRequest.senderId,
+                userId2: acceptedRequest.recipientId
+            }
+        });
+
+        res.status(200).json({ message: "Friend request accepted." });
+    } catch (error) {
+        res.status(500).send("Internal server error");
+    }
+});
+
+// Decline a friend request
+friendsRouter.post("/requests/:requestId/decline", authenticateUser, async (req, res) => {
+    const { requestId } = req.params;
+
+    try {
+        await prisma.friendRequest.delete({
+            where: { id: parseInt(requestId) }
+        });
+
+        res.status(200).json({ message: "Friend request declined." });
+    } catch (error) {
+        res.status(500).send("Internal server error");
+    }
+});
+
 
 
 module.exports = friendsRouter;

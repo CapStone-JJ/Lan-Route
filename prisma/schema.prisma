@@ -43,6 +43,9 @@ model User {
   receivedNotifications  Notification[] @relation("UserToReceivedNotifications")
   // Notifications triggered by the user
   triggeredNotifications Notification[] @relation("UserToTriggeredNotifications")
+
+  sentFriendRequests    FriendRequest[] @relation("FriendRequestSender")
+  receivedFriendRequests FriendRequest[] @relation("FriendRequestRecipient")
 }
 
 model Widget {
@@ -65,7 +68,6 @@ model Like {
 model Friends {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
-  status    String
   user1     User     @relation("User1Friends", fields: [userId1], references: [id], onDelete: Cascade)
   userId1   Int
   user2     User     @relation("User2Friends", fields: [userId2], references: [id], onDelete: Cascade)
@@ -150,3 +152,14 @@ model Notification {
   commentId   Int?
   comment     Comment? @relation(fields: [commentId], references: [id], name: "CommentToNotifications")
 }
+
+model FriendRequest {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  status      String   // "PENDING", "ACCEPTED", "DECLINED"
+  senderId    Int
+  recipientId Int
+  sender      User     @relation("FriendRequestSender", fields: [senderId], references: [id])
+  recipient   User     @relation("FriendRequestRecipient", fields: [recipientId], references: [id])
+}
+
