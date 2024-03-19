@@ -166,7 +166,7 @@ friendsRouter.get("/requests", authenticateUser, async (req, res) => {
 friendsRouter.post("/request", authenticateUser, async (req, res, next) => {
     try {
         const senderId = parseInt(req.user.id); // The ID of the user sending the request
-        const recipientId = req.body.recipientId; // The ID of the user receiving the request
+        const recipientId = parseInt(req.body.recipientId.recipientId); // The ID of the user receiving the request
 
         console.log(senderId);
         console.log(recipientId)
@@ -238,8 +238,8 @@ friendsRouter.post("/requests/:requestId/accept", authenticateUser, async (req, 
 
         await prisma.friends.create({
             data: {
-                userId1: acceptedRequest.senderId,
-                userId2: acceptedRequest.recipientId
+                userId1: request.senderId,
+                userId2: request.recipientId
             }
         });
 
