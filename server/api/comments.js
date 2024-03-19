@@ -66,8 +66,7 @@ commentRouter.post("/", authenticateUser, async (req, res, next) => {
       },
     });
 
-    res
-      .status(201)
+    res.status(201)
       .send({ message: "Comment added successfully, notification sent." });
   } catch (error) {
     console.error("Error creating comment:", error);

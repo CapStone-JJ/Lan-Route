@@ -16,22 +16,46 @@ widgetRouter.get('/', async (req, res) => {
     }
   });
 
+  // Route for getting a specific widget by ID
+widgetRouter.get('/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+      const widget = await prisma.widget.findUnique({
+          where: { id: parseInt(id) }
+      });
+      if (!widget) {
+          return res.status(404).json({ error: 'Widget not found' });
+      }
+      res.json(widget);
+  } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch widget details' });
+  }
+});
+
 // Route for creating a new widget
 widgetRouter.post('/', authenticateUser, async (req, res) => {
-    try {
-      const { type, configuration, userId } = req.body;
-      const widgets = await prisma.widget.create({
-        data: {
-          type,
-          configuration,
-          userId
-        }
-      });
-      res.json(widgets);
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to create widget' });
-    }
-  });
+  try {
+    const { type, configuration, userId } = req.body;
+
+    // Convert the type to a string
+    const widgetType = String(type);
+
+    const widgets = await prisma.widget.create({
+      data: {
+        type: widgetType, // Use the converted widgetType
+        configuration,
+        userId
+      }
+    });
+
+    res.json(widgets);
+  } catch (error) {
+    console.error('Error creating widget:', error);
+    res.status(500).json({ error: 'Failed to create widget' });
+  }
+});
+
+
 
 // Route for updating a widget
 widgetRouter.put('/:id', authenticateUser, async (req, res) => {

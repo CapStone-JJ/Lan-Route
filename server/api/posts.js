@@ -69,6 +69,8 @@ postsRouter.get("/user/:userId", async (req, res, next) => {
 
 postsRouter.post("/", authenticateUser, async (req, res, next) => {
     const { content, published, tags } = req.body;
+    const { video, image } = req.files || {};
+
     try {
       const token = req.headers.authorization.split(" ")[1]; // Extract the token
       const decoded = jwt.verify(token, process.env.JWT_SECRET); // Verify the token
@@ -85,6 +87,27 @@ postsRouter.post("/", authenticateUser, async (req, res, next) => {
         // Handle the case where the user is not found
         return res.status(404).send("User not found.");
       }
+
+      let videoPath = null;
+      let imagePath = null;
+
+      if (video) {
+        const videoFileName = `${Date.now()}_${video.name}`;
+        videoPath = path.join(__dirname, 'path/to/videos', videoFileName);
+
+        // Save the video file to the server
+      await video.mv(videoPath);
+      }
+
+      if (image) {
+        const imageFileName = `${Date.now()}_${image.name}`;
+        imagePath = path.join(__dirname, 'path/to/images', imageFileName);
+
+      // Save the image file to the server
+      await image.mv(imagePath);
+      }
+
+      const tagList = Array.isArray(tags) ? tags : [];
   
       // Create the post along with its associated tags
       const createdPost = await prisma.post.create({
@@ -94,7 +117,7 @@ postsRouter.post("/", authenticateUser, async (req, res, next) => {
           author: { connect: { id: userId } },
           // Create the tags and associate them with the post
           Post_tag: {
-            create: tags.map((tag) => ({
+            create: tagList.map((tag) => ({
               tag: {
                 connectOrCreate: {
                   where: { name: tag },
@@ -102,7 +125,9 @@ postsRouter.post("/", authenticateUser, async (req, res, next) => {
                 },
               },
             })),
-          },
+        },
+        video: videoPath,
+        image: imagePath,
         },
         include: {
           Post_tag: {

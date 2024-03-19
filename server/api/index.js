@@ -93,4 +93,7 @@ apiRouter.use("/feed", feedRouter);
 const notificationsRouter = require("./notifications");
 apiRouter.use("/notifications", notificationsRouter);
 
+const convertRouter = require("./convert");
+apiRouter.use("/convert", convertRouter);
+
 module.exports = apiRouter;
