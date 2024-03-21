@@ -85,8 +85,8 @@ model Post {
   Post_tag       Post_tag[]
   tagId          Int?
   likes          Like[]        @relation("PostLikes")
-  video          String?
-  image          String?
+  filePath       String?
+  fileType       String?
   tags           Tag[]
   notifications  Notification[]  @relation("PostToNotifications")
 }

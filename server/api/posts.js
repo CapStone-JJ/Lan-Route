@@ -5,6 +5,7 @@ const prisma = new PrismaClient();
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const { authenticateUser } = require("../auth/middleware");
+const upload = require("../multerConfig");
 
 // Get all posts
 postsRouter.get("/", async (req, res, next) => {
@@ -44,77 +45,75 @@ postsRouter.get("/:id", async (req, res, next) => {
 
     res.send(post);
   } catch (error) {
+    console.error("Error creating post:", error);
     next(error);
   }
 });
 
 // Get posts by user
 postsRouter.get("/user/:userId", async (req, res, next) => {
-    try {
-        const userId = parseInt(req.params.userId);
-        const posts = await prisma.post.findMany({
-            where: {
-                authorId: userId
-            },
-            include: {
-                author: { select: { username: true } },
-                Post_tag: { include: { tag: true } } // Include the name of the tags
-            }
-        });
-        res.send(posts);
-    } catch (error) {
-        next(error);
-    }
+  try {
+    const userId = parseInt(req.params.userId);
+    const posts = await prisma.post.findMany({
+      where: {
+        authorId: userId,
+      },
+      include: {
+        author: { select: { username: true } },
+        Post_tag: { include: { tag: true } }, // Include the name of the tags
+      },
+    });
+    res.send(posts);
+  } catch (error) {
+    next(error);
+  }
 });
 
-postsRouter.post("/", authenticateUser, async (req, res, next) => {
-    const { content, published, tags } = req.body;
-    const { video, image } = req.files || {};
+postsRouter.post(
+  "/",
+  authenticateUser,
+  upload.fields([{ name: "image" }, { name: "video" }]),
+  async (req, res, next) => {
+    const { content, tags, published = true } = req.body;
+    let filePath, fileType;
+
+    if (req.files.image) {
+      filePath = `/uploads/images/${req.files.image[0].filename}`;
+      fileType = "image";
+    } else if (req.files.video) {
+      filePath = `/uploads/videos/${req.files.video[0].filename}`;
+      fileType = "video";
+    }
+
+    console.log(req.file);
 
     try {
       const token = req.headers.authorization.split(" ")[1]; // Extract the token
       const decoded = jwt.verify(token, process.env.JWT_SECRET); // Verify the token
       const userId = decoded.id; // Extract the userId from the decoded token
-  
+
       // Retrieve the user data based on the user ID obtained from the token
       const user = await prisma.user.findUnique({
         where: {
           id: userId,
         },
       });
-  
+
       if (!user) {
         // Handle the case where the user is not found
         return res.status(404).send("User not found.");
       }
 
-      let videoPath = null;
-      let imagePath = null;
+      const tagList = tags ? tags.split(",").map((tag) => tag.trim()) : [];
 
-      if (video) {
-        const videoFileName = `${Date.now()}_${video.name}`;
-        videoPath = path.join(__dirname, 'path/to/videos', videoFileName);
-
-        // Save the video file to the server
-      await video.mv(videoPath);
-      }
-
-      if (image) {
-        const imageFileName = `${Date.now()}_${image.name}`;
-        imagePath = path.join(__dirname, 'path/to/images', imageFileName);
-
-      // Save the image file to the server
-      await image.mv(imagePath);
-      }
-
-      const tagList = Array.isArray(tags) ? tags : [];
-  
       // Create the post along with its associated tags
       const createdPost = await prisma.post.create({
         data: {
           content,
           published,
           author: { connect: { id: userId } },
+          fileType, // Store the file type
+          filePath, // Store the file path
           // Create the tags and associate them with the post
           Post_tag: {
             create: tagList.map((tag) => ({
@@ -125,9 +124,7 @@ postsRouter.post("/", authenticateUser, async (req, res, next) => {
                 },
               },
             })),
-        },
-        video: videoPath,
-        image: imagePath,
+          },
         },
         include: {
           Post_tag: {
@@ -137,14 +134,14 @@ postsRouter.post("/", authenticateUser, async (req, res, next) => {
           },
         },
       });
-  
+
       res.status(201).send(createdPost);
     } catch (error) {
       console.error("Error creating post:", error);
       next(error);
     }
-  });
-  
+  }
+);
 
 // Edit a post
 postsRouter.put("/:id", authenticateUser, async (req, res, next) => {

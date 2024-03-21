@@ -1,13 +1,15 @@
 // Import necessary modules
 const express = require("express");
 const morgan = require("morgan");
-const path = require("path");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 require("dotenv").config();
-const bcrypt = require('bcrypt');
+const bcrypt = require("bcrypt");
+const fs = require("fs");
+const path = require("path");
+const upload = require("./multerConfig");
 
 // Create Express app
 const app = express();
@@ -24,38 +26,43 @@ app.use(express.urlencoded({ extended: true }));
 
 // Static file-serving middleware
 app.use(express.static(path.join(__dirname, "..", "client/dist")));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.use((req, res, next) => {
-    const auth = req.headers.authorization;
-    const token = auth?.startsWith("Bearer ") ? auth.slice(7) : null;
-    try {
-      if (token) {
-        req.user = jwt.verify(token, process.env.JWT_SECRET);
-      } else {
-        req.user = null;
-      }
-    } catch (error) {
-      console.error("JWT verification error:", error);
-      // req.user = null;
+  const auth = req.headers.authorization;
+  const token = auth?.startsWith("Bearer ") ? auth.slice(7) : null;
+  try {
+    if (token) {
+      req.user = jwt.verify(token, process.env.JWT_SECRET);
+    } else {
+      req.user = null;
     }
-    next();
-  });
+  } catch (error) {
+    console.error("JWT verification error:", error);
+    // req.user = null;
+  }
+  next();
+});
 
-// Backend Routes
+
 // Backend Routes
 app.use("/auth", require("./auth"));
 // Protect API routes with JWT verification middleware
-app.use("/api", (req, res, next) => {
-  // Check if user is authenticated
-  if (!req.user) {
-    return res.status(401).send("Unauthorized");
-  }
-  next();
-}, require("./api"));
+app.use(
+  "/api",
+  (req, res, next) => {
+    // Check if user is authenticated
+    if (!req.user) {
+      return res.status(401).send("Unauthorized");
+    }
+    next();
+  },
+  require("./api")
+);
 // Serves the HTML file that Vite builds
 app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "..", "client/dist/index.html"));
-  });
+  res.sendFile(path.join(__dirname, "..", "client/dist/index.html"));
+});
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -65,4 +72,5 @@ app.use((err, req, res, next) => {
 app.use((req, res) => {
   res.status(404).send("Not found.");
 });
+
 module.exports = app;
