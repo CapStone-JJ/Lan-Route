@@ -27,6 +27,7 @@ model User {
   viewedProfile Int    @default(0)
   impressions   Int    @default(0)
   emailVerified  Boolean   @default(false)
+  playlist    Playlist[]
 
   // Define the relationship with Post
   post         Post[]
@@ -163,3 +164,13 @@ model FriendRequest {
   recipient   User     @relation("FriendRequestRecipient", fields: [recipientId], references: [id])
 }
 
+model Playlist {
+  id          Int      @id @default(autoincrement())
+  url         String
+  title       String
+  description String?
+  userId      Int
+  embedCode   String?
+
+  owner       User     @relation(fields: [userId], references: [id])
+}

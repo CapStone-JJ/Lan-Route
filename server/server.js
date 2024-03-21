@@ -8,12 +8,23 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 require("dotenv").config();
 const bcrypt = require('bcrypt');
+const helmet = require('helmet')
 
 // Create Express app
 const app = express();
 
 // Logging middleware
 app.use(morgan("dev"));
+
+app.use(helmet.contentSecurityPolicy({
+  directives: {
+    defaultSrc: ["'self'"], // Allow resources from the same origin
+    scriptSrc: ["'self'"], // Allow scripts from the same origin
+    styleSrc: ["'self'"], // Allow styles from the same origin
+    imgSrc: ["'self'"], // Allow images from the same origin
+    frameSrc: ["'self'", "music.apple.com"], // Allow embedding from 'music.apple.com'
+  },
+}));
 
 // CORS middleware
 app.use(cors());

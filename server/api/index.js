@@ -93,7 +93,7 @@ apiRouter.use("/feed", feedRouter);
 const notificationsRouter = require("./notifications");
 apiRouter.use("/notifications", notificationsRouter);
 
-const convertRouter = require("./convert");
-apiRouter.use("/convert", convertRouter);
+const playlistRouter = require("./playlist");
+apiRouter.use("/playlist", playlistRouter);
 
 module.exports = apiRouter;
