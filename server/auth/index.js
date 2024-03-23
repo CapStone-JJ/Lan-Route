@@ -54,19 +54,26 @@ router.post("/login", async (req, res, next) => {
   try {
     const { username, password } = req.body;
 
+    // Retrieve user from the database
     const user = await prisma.user.findUnique({
-      where: {
-        username,
-      },
+      where: { username },
     });
 
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) {
+    if (!user) {
       return res.status(401).send("Invalid login credentials.");
     }
 
+    // Compare the provided password with the hashed password from the database
+    const passwordMatch = await bcrypt.compare(password, user.password);
+
+    if (!passwordMatch) {
+      return res.status(401).send("Invalid login credentials.");
+    }
+
+    // Passwords match, generate JWT token
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET);
 
+    // Send token and user data in response
     res.send({ token, user });
   } catch (error) {
     next(error);
