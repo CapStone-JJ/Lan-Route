@@ -10,9 +10,8 @@ commentRouter.get("/post/:postId", async (req, res, next) => {
   console.log("Post ID:", postId);
   try {
     const comments = await prisma.comment.findMany({
-      where: {
-        postId: parseInt(postId),
-      },
+      where: { postId: parseInt(postId) },
+      include: { user: true }, // Include user information
     });
     res.json(comments);
   } catch (error) {
